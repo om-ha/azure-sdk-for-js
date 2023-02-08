@@ -25,7 +25,8 @@ import { RequestPolicy } from '@azure/core-http';
 import { RequestPolicyFactory } from '@azure/core-http';
 import { RequestPolicyOptions } from '@azure/core-http';
 import { RestError } from '@azure/core-http';
-import { ServiceClientOptions } from '@azure/core-http';
+import { ServiceClientOptions as ServiceClientOptions_2 } from '@azure/core-http';
+import { TokenCredential } from '@azure/identity';
 import { TransferProgressEvent } from '@azure/core-http';
 import { UserAgentOptions } from '@azure/core-http';
 import { WebResource } from '@azure/core-http';
@@ -636,6 +637,7 @@ export interface FileDownloadHeaders {
 
 // @public
 export interface FileDownloadOptionalParams extends coreHttp.OperationOptions {
+    fileRequestIntent?: ShareFileRequestIntent;
     leaseAccessConditions?: LeaseAccessConditions;
     range?: string;
     rangeGetContentMD5?: boolean;
@@ -1310,7 +1312,7 @@ export interface Metrics {
 }
 
 // @public
-export function newPipeline(credential?: Credential_2, pipelineOptions?: StoragePipelineOptions): Pipeline;
+export function newPipeline(credential?: Credential_2 | TokenCredential, pipelineOptions?: StoragePipelineOptions): Pipeline;
 
 // @public
 export type PermissionCopyModeType = "source" | "override";
@@ -1320,11 +1322,13 @@ export class Pipeline {
     constructor(factories: RequestPolicyFactory[], options?: PipelineOptions);
     readonly factories: RequestPolicyFactory[];
     readonly options: PipelineOptions;
+    // Warning: (ae-forgotten-export) The symbol "ServiceClientOptions" needs to be exported by the entry point index.d.ts
     toServiceClientOptions(): ServiceClientOptions;
 }
 
 // @public
 export interface PipelineOptions {
+    fileRequestIntent?: ShareFileRequestIntent;
     httpClient?: IHttpClient;
 }
 
@@ -1479,8 +1483,9 @@ export type ShareAccessTier = "TransactionOptimized" | "Hot" | "Cool";
 // @public
 export class ShareClient extends StorageClient {
     constructor(connectionString: string, name: string, options?: StoragePipelineOptions);
-    constructor(url: string, credential?: Credential_2, options?: StoragePipelineOptions);
-    constructor(url: string, pipeline: Pipeline);
+    constructor(url: string, credential?: Credential_2 | TokenCredential, options?: StoragePipelineOptions);
+    // Warning: (ae-forgotten-export) The symbol "ShareClientConfig" needs to be exported by the entry point index.d.ts
+    constructor(url: string, pipeline: Pipeline, options?: ShareClientConfig);
     create(options?: ShareCreateOptions): Promise<ShareCreateResponse>;
     createDirectory(directoryName: string, options?: DirectoryCreateOptions): Promise<{
         directoryClient: ShareDirectoryClient;
@@ -1624,8 +1629,8 @@ export type ShareDeleteResponse = ShareDeleteHeaders & {
 
 // @public
 export class ShareDirectoryClient extends StorageClient {
-    constructor(url: string, credential?: Credential_2, options?: StoragePipelineOptions);
-    constructor(url: string, pipeline: Pipeline);
+    constructor(url: string, credential?: Credential_2 | TokenCredential, options?: StoragePipelineOptions);
+    constructor(url: string, pipeline: Pipeline, options?: ShareClientConfig);
     create(options?: DirectoryCreateOptions): Promise<DirectoryCreateResponse>;
     createFile(fileName: string, size: number, options?: FileCreateOptions): Promise<{
         fileClient: ShareFileClient;
@@ -1671,7 +1676,7 @@ export interface ShareExistsOptions extends CommonOptions {
 
 // @public
 export class ShareFileClient extends StorageClient {
-    constructor(url: string, credential?: Credential_2, options?: StoragePipelineOptions);
+    constructor(url: string, credential?: Credential_2 | TokenCredential, options?: StoragePipelineOptions);
     constructor(url: string, pipeline: Pipeline);
     abortCopyFromURL(copyId: string, options?: FileAbortCopyFromURLOptions): Promise<FileAbortCopyResponse>;
     clearRange(offset: number, contentLength: number, options?: FileClearRangeOptions): Promise<FileUploadRangeResponse>;
@@ -1720,6 +1725,9 @@ export interface ShareFileRangeList {
     // (undocumented)
     ranges?: RangeModel[];
 }
+
+// @public
+export type ShareFileRequestIntent = "none" | "backup";
 
 // @public
 export interface ShareGenerateSasUrlOptions extends CommonGenerateSasUrlOptions {
@@ -1970,8 +1978,8 @@ export class ShareSASPermissions {
 
 // @public
 export class ShareServiceClient extends StorageClient {
-    constructor(url: string, credential?: Credential_2, options?: StoragePipelineOptions);
-    constructor(url: string, pipeline: Pipeline);
+    constructor(url: string, credential?: Credential_2 | TokenCredential, options?: StoragePipelineOptions);
+    constructor(url: string, pipeline: Pipeline, options?: ShareClientConfig);
     createShare(shareName: string, options?: ShareCreateOptions): Promise<{
         shareCreateResponse: ShareCreateResponse;
         shareClient: ShareClient;

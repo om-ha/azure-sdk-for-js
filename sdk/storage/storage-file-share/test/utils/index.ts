@@ -7,6 +7,7 @@ import * as path from "path";
 
 import { TokenCredential } from "@azure/core-http";
 import { BlobServiceClient } from "@azure/storage-blob";
+//import { DefaultAzureCredential } from "@azure/identity";
 
 import {
   AccountSASPermissions,
@@ -14,12 +15,14 @@ import {
   AccountSASServices,
   generateAccountSASQueryParameters,
   SASProtocol,
+  ShareFileRequestIntent,
 } from "../../src";
 import { StorageSharedKeyCredential } from "../../src/credentials/StorageSharedKeyCredential";
 import { newPipeline } from "../../src/Pipeline";
 import { ShareServiceClient } from "../../src/ShareServiceClient";
 import { extractConnectionStringParts } from "../../src/utils/utils.common";
 import { getUniqueName, SimpleTokenCredential } from "./testutils.common";
+import { DefaultAzureCredential } from "@azure/identity";
 
 export * from "./testutils.common";
 
@@ -50,6 +53,25 @@ export function getGenericBSU(
 
 export function getBlobServceClient(): BlobServiceClient {
   return BlobServiceClient.fromConnectionString(getConnectionStringFromEnvironment());
+}
+
+export function getTokenBSUWithDefaultCredential(
+  accountType: string = "",
+  accountNameSuffix: string = "",
+  fileRequestIntent?: ShareFileRequestIntent
+): ShareServiceClient {
+  const accountNameEnvVar = `${accountType}ACCOUNT_NAME`;
+  const accountName = process.env[accountNameEnvVar];
+  if (!accountName || accountName === "") {
+    throw new Error(`${accountNameEnvVar} environment variables not specified.`);
+  }
+
+  const credential = new DefaultAzureCredential();
+  const pipeline = newPipeline(credential);
+  const sharePrimaryURL = `https://${accountName}${accountNameSuffix}.file.core.windows.net/`;
+  return new ShareServiceClient(sharePrimaryURL, pipeline, {
+    fileRequestIntent: fileRequestIntent,
+  });
 }
 
 export function getBSU(): ShareServiceClient {

@@ -1,7 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { HttpRequestBody, HttpResponse, isNode, TransferProgressEvent } from "@azure/core-http";
+import {
+  HttpRequestBody,
+  HttpResponse,
+  isNode,
+  isTokenCredential,
+  TransferProgressEvent,
+} from "@azure/core-http";
 import { SpanStatusCode } from "@azure/core-tracing";
 import { AbortSignalLike } from "@azure/abort-controller";
 import {
@@ -106,6 +112,8 @@ import {
   toShareProtocols,
   HttpAuthorization,
   fileChangeTimeToString,
+  ShareClientOptions,
+  ShareClientConfig,
 } from "./models";
 import { Batch } from "./utils/Batch";
 import { BufferScheduler } from "./utils/BufferScheduler";
@@ -125,6 +133,7 @@ import { SASProtocol } from "./SASQueryParameters";
 import { SasIPRange } from "./SasIPRange";
 import { FileSASPermissions } from "./FileSASPermissions";
 import { ListFilesIncludeType } from "./generated/src";
+import { TokenCredential } from "@azure/identity";
 
 /**
  * Options to configure the {@link ShareClient.create} operation.
@@ -534,6 +543,8 @@ export class ShareClient extends StorageClient {
 
   private _name: string;
 
+  private shareClientConfig?: ShareClientConfig;
+
   /**
    * The name of the share
    */
@@ -567,7 +578,11 @@ export class ShareClient extends StorageClient {
    */
   // Legacy, no way to fix the eslint error without breaking. Disable the rule for this line.
   /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options */
-  constructor(url: string, credential?: Credential, options?: StoragePipelineOptions);
+  constructor(
+    url: string,
+    credential?: Credential | TokenCredential,
+    options?: StoragePipelineOptions
+  );
   /**
    * Creates an instance of ShareClient.
    *
@@ -578,13 +593,13 @@ export class ShareClient extends StorageClient {
    * @param pipeline - Call newPipeline() to create a default
    *                            pipeline, or provide a customized pipeline.
    */
-  constructor(url: string, pipeline: Pipeline);
+  constructor(url: string, pipeline: Pipeline, options?: ShareClientConfig);
   constructor(
     urlOrConnectionString: string,
-    credentialOrPipelineOrShareName?: Credential | Pipeline | string,
+    credentialOrPipelineOrShareName?: Credential | TokenCredential | Pipeline | string,
     // Legacy, no way to fix the eslint error without breaking. Disable the rule for this line.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options */
-    options?: StoragePipelineOptions
+    options?: ShareClientOptions
   ) {
     let pipeline: Pipeline;
     let url: string;
@@ -592,7 +607,10 @@ export class ShareClient extends StorageClient {
       // (url: string, pipeline: Pipeline)
       url = urlOrConnectionString;
       pipeline = credentialOrPipelineOrShareName;
-    } else if (credentialOrPipelineOrShareName instanceof Credential) {
+    } else if (
+      credentialOrPipelineOrShareName instanceof Credential ||
+      isTokenCredential(credentialOrPipelineOrShareName)
+    ) {
       // (url: string, credential?: Credential, options?: StoragePipelineOptions)
       url = urlOrConnectionString;
       pipeline = newPipeline(credentialOrPipelineOrShareName, options);
@@ -635,6 +653,7 @@ export class ShareClient extends StorageClient {
     }
     super(url, pipeline);
     this._name = getShareNameAndPathFromUrl(this.url).shareName;
+    this.shareClientConfig = options;
     this.context = new Share(this.storageClientContext);
   }
 
@@ -734,7 +753,8 @@ export class ShareClient extends StorageClient {
   public getDirectoryClient(directoryName: string): ShareDirectoryClient {
     return new ShareDirectoryClient(
       appendToURLPath(this.url, EscapePath(directoryName)),
-      this.pipeline
+      this.pipeline,
+      this.shareClientConfig
     );
   }
 
@@ -1309,6 +1329,7 @@ export class ShareClient extends StorageClient {
         },
         {
           abortSignal: options.abortSignal,
+          fileRequestIntent: this.shareClientConfig?.fileRequestIntent,
           ...convertTracingToRequestOptionsBase(updatedOptions),
         }
       );
@@ -1339,6 +1360,7 @@ export class ShareClient extends StorageClient {
     try {
       return await this.context.getPermission(filePermissionKey, {
         abortSignal: options.abortSignal,
+        fileRequestIntent: this.shareClientConfig?.fileRequestIntent,
         ...convertTracingToRequestOptionsBase(updatedOptions),
       });
     } catch (e: any) {
@@ -1671,6 +1693,8 @@ export class ShareDirectoryClient extends StorageClient {
   private _path: string;
   private _name: string;
 
+  private shareClientConfig?: ShareClientConfig;
+
   /**
    * The share name corresponding to this directory client
    */
@@ -1709,7 +1733,11 @@ export class ShareDirectoryClient extends StorageClient {
    */
   // Legacy, no way to fix the eslint error without breaking. Disable the rule for this line.
   /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options */
-  constructor(url: string, credential?: Credential, options?: StoragePipelineOptions);
+  constructor(
+    url: string,
+    credential?: Credential | TokenCredential,
+    options?: StoragePipelineOptions
+  );
   /**
    * Creates an instance of DirectoryClient.
    *
@@ -1724,16 +1752,19 @@ export class ShareDirectoryClient extends StorageClient {
    * @param pipeline - Call newPipeline() to create a default
    *                            pipeline, or provide a customized pipeline.
    */
-  constructor(url: string, pipeline: Pipeline);
+  constructor(url: string, pipeline: Pipeline, options?: ShareClientConfig);
   constructor(
     url: string,
-    credentialOrPipeline?: Credential | Pipeline,
-    options: StoragePipelineOptions = {}
+    credentialOrPipeline?: Credential | TokenCredential | Pipeline,
+    options: ShareClientOptions = {}
   ) {
     let pipeline: Pipeline;
     if (credentialOrPipeline instanceof Pipeline) {
       pipeline = credentialOrPipeline;
-    } else if (credentialOrPipeline instanceof Credential) {
+    } else if (
+      credentialOrPipeline instanceof Credential ||
+      isTokenCredential(credentialOrPipeline)
+    ) {
       pipeline = newPipeline(credentialOrPipeline, options);
     } else {
       // The second parameter is undefined. Use anonymous credential.
@@ -1746,6 +1777,7 @@ export class ShareDirectoryClient extends StorageClient {
       shareName: this._shareName,
       path: this._path,
     } = getShareNameAndPathFromUrl(this.url));
+    this.shareClientConfig = options;
     this.context = new Directory(this.storageClientContext);
   }
 
@@ -1779,6 +1811,7 @@ export class ShareDirectoryClient extends StorageClient {
           fileChangeOn: fileChangeTimeToString(options.changeTime),
           fileCreatedOn: fileCreationTimeToString(options.creationTime),
           fileLastWriteOn: fileLastWriteTimeToString(options.lastWriteTime),
+          fileRequestIntent: this.shareClientConfig?.fileRequestIntent,
           ...convertTracingToRequestOptionsBase(updatedOptions),
         }
       );
@@ -3662,13 +3695,17 @@ export class ShareFileClient extends StorageClient {
    *                     Encoded URL string will NOT be escaped twice, only special characters in URL path will be escaped.
    *                     However, if a file or directory name includes %, file or directory name must be encoded in the URL.
    *                     Such as a file named "myfile%", the URL should be "https://myaccount.file.core.windows.net/myshare/mydirectory/myfile%25".
-   * @param credential - Such as AnonymousCredential or StorageSharedKeyCredential.
+   * @param credential - Such as AnonymousCredential, StorageSharedKeyCredential or TokenCredential,
    *                                  If not specified, AnonymousCredential is used.
    * @param options - Optional. Options to configure the HTTP pipeline.
    */
   // Legacy, no way to fix the eslint error without breaking. Disable the rule for this line.
   /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options */
-  constructor(url: string, credential?: Credential, options?: StoragePipelineOptions);
+  constructor(
+    url: string,
+    credential?: Credential | TokenCredential,
+    options?: StoragePipelineOptions
+  );
   /**
    * Creates an instance of ShareFileClient.
    *
@@ -3686,7 +3723,7 @@ export class ShareFileClient extends StorageClient {
   constructor(url: string, pipeline: Pipeline);
   constructor(
     url: string,
-    credentialOrPipeline?: Credential | Pipeline,
+    credentialOrPipeline?: Credential | TokenCredential | Pipeline,
     // Legacy, no way to fix the eslint error without breaking. Disable the rule for this line.
     /* eslint-disable-next-line @azure/azure-sdk/ts-naming-options */
     options?: StoragePipelineOptions
@@ -3694,7 +3731,10 @@ export class ShareFileClient extends StorageClient {
     let pipeline: Pipeline;
     if (credentialOrPipeline instanceof Pipeline) {
       pipeline = credentialOrPipeline;
-    } else if (credentialOrPipeline instanceof Credential) {
+    } else if (
+      credentialOrPipeline instanceof Credential ||
+      isTokenCredential(credentialOrPipeline)
+    ) {
       pipeline = newPipeline(credentialOrPipeline, options);
     } else {
       // The second parameter is undefined. Use anonymous credential.

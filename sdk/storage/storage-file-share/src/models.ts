@@ -3,9 +3,21 @@
 import { FileSystemAttributes } from "./FileSystemAttributes";
 import { truncatedISO8061Date } from "./utils/utils.common";
 import { logger } from "./log";
+import { ServiceClientOptions as ServiceClientOptionsInternal } from "@azure/core-http";
+import { ShareFileRequestIntent } from "./generatedModels";
+import { StoragePipelineOptions } from "./Pipeline";
 
 export interface Metadata {
   [propertyName: string]: string;
+}
+
+export interface ServiceClientOptions extends ServiceClientOptionsInternal {
+  /** Valid value is backup */
+  fileRequestIntent?: ShareFileRequestIntent;
+  /** If true, the trailing dot will not be trimmed from the target URI. */
+  allowTrailingDot?: boolean;
+  /** If true, the trailing dot will not be trimmed from the source URI. */
+  allowSourceTrailingDot?: boolean;
 }
 
 export interface FileHttpHeaders {
@@ -189,6 +201,11 @@ export interface ShareProtocols {
   nfsEnabled?: boolean;
 }
 
+export interface ShareClientConfig {
+  fileRequestIntent?: ShareFileRequestIntent;
+}
+
+export type ShareClientOptions = StoragePipelineOptions & ShareClientConfig;
 /**
  * Convert protocols from joined string to ShareProtocols.
  *

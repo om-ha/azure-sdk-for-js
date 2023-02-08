@@ -9,6 +9,10 @@ export const FILE_RANGE_MAX_SIZE_BYTES: number = 4 * 1024 * 1024; // 4MB
 export const DEFAULT_MAX_DOWNLOAD_RETRY_REQUESTS: number = 5;
 export const DEFAULT_HIGH_LEVEL_CONCURRENCY: number = 5;
 export const REQUEST_TIMEOUT: number = 100 * 1000; // In ms
+/**
+ * The OAuth scope to use with Azure Storage.
+ */
+export const StorageOAuthScopes: string | string[] = "https://storage.azure.com/.default";
 
 export const URLConstants = {
   Parameters: {

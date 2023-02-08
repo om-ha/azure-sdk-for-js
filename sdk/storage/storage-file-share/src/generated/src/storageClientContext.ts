@@ -15,6 +15,8 @@ const packageVersion = "12.13.0";
 export class StorageClientContext extends coreHttp.ServiceClient {
   url: string;
   version: string;
+  allowTrailingDot?: boolean;
+  allowSourceTrailingDot?: boolean;
   fileRangeWriteFromUrl: string;
 
   /**
@@ -48,7 +50,7 @@ export class StorageClientContext extends coreHttp.ServiceClient {
     this.url = url;
 
     // Assigning values to Constant parameters
-    this.version = options.version || "2021-12-02";
+    this.version = options.version || "2022-11-02";
     this.fileRangeWriteFromUrl = options.fileRangeWriteFromUrl || "update";
   }
 }
