@@ -3894,7 +3894,7 @@ packages:
     dependencies:
       semver: 7.3.8
       shelljs: 0.8.5
-      typescript: 5.0.0-dev.20230208
+      typescript: 5.0.0-dev.20230215
     dev: false
 
   /downlevel-dts/0.7.0:
@@ -8779,8 +8779,8 @@ packages:
     hasBin: true
     dev: false
 
-  /typescript/5.0.0-dev.20230208:
-    resolution: {integrity: sha512-FkUy5kJ7XmLYxej9g9Lq4FMw3P6YjKuesa+1YoLvz2lHZuRuf91VxLsj9DWtknGCmjOVvyu+eefaeVknGTiI/Q==}
+  /typescript/5.0.0-dev.20230215:
+    resolution: {integrity: sha512-rbuBEuyaLltNQkRsBCxysSHGGEaizuGaVEMO+8bBmTXQRSzITTl1WOg2UFXr9p0pwz8l0KJtOem8MggaGz1/XA==}
     engines: {node: '>=4.2.0'}
     hasBin: true
     dev: false
@@ -17192,7 +17192,7 @@ packages:
     dev: false
 
   file:projects/identity.tgz:
-    resolution: {integrity: sha512-brF7QRLqUk7tKTDBJoHl35fVdUUJ9uK98o4/oMYrweDl+ZYc6onnpV4CPOxecFeVzz+P2JkgmgRIazQ7XIK5bg==, tarball: file:projects/identity.tgz}
+    resolution: {integrity: sha512-RoZHWQUIgW+nJS8gWdpB2NNOSYnN1WMq3qP8rsQDYBQCV8W+VgsXpSM0rg9mhkwnYGz0aYSicFsd8FE2p2/Mlg==, tarball: file:projects/identity.tgz}
     name: '@rush-temp/identity'
     version: 0.0.0
     dependencies:
@@ -17236,11 +17236,14 @@ packages:
       rimraf: 3.0.2
       sinon: 9.2.4
       stoppable: 1.1.0
+      ts-node: 10.9.1_gjo33tkf7m2dtuw6tmxt3xwf4q
       tslib: 2.5.0
       typescript: 4.8.4
       util: 0.12.5
       uuid: 8.3.2
     transitivePeerDependencies:
+      - '@swc/core'
+      - '@swc/wasm'
       - bufferutil
       - debug
       - encoding
